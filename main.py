@@ -20,6 +20,7 @@ import httpx
 import openai
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from supabase import create_client, Client
 from google.oauth2 import service_account
@@ -110,6 +111,8 @@ else:
 # ─────────────────────────────────────────────
 # FastAPI app
 # ─────────────────────────────────────────────
+security = HTTPBearer()
+
 app = FastAPI(title="TasteMatch API", version="1.0.0")
 
 app.add_middleware(
@@ -144,10 +147,8 @@ class MessageRequest(BaseModel):
 # ─────────────────────────────────────────────
 # Auth helper — verify Supabase JWT
 # ─────────────────────────────────────────────
-async def get_current_user(authorization: str = Header(...)):
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Invalid authorization header.")
-    token = authorization.split(" ", 1)[1]
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
 
     async with httpx.AsyncClient() as client:
         resp = await client.get(
