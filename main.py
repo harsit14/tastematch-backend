@@ -44,7 +44,6 @@ SUPABASE_ANON_KEY    = os.environ["SUPABASE_ANON_KEY"]
 
 VERTEX_PROJECT  = os.environ.get("VERTEX_PROJECT", "tastematch-pilot")
 VERTEX_LOCATION = os.environ.get("VERTEX_LOCATION", "us-central1")
-# Llama 3.3 70B is the smallest available Llama MaaS model on Vertex AI
 VERTEX_MODEL    = os.environ.get("VERTEX_MODEL", "meta/llama-3.3-70b-instruct-maas")
 
 CHROMA_HOST       = os.environ.get("CHROMA_HOST", "")
@@ -60,14 +59,6 @@ admin_supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 # ─────────────────────────────────────────────
 # Vertex AI — OpenAI-compatible client for Llama MaaS
-#
-# Llama models on Vertex AI do NOT use the GenerativeModel SDK.
-# They use an OpenAI-compatible endpoint. We get a short-lived
-# access token from the service account and use it as the API key.
-#
-# Supports two auth methods:
-#   1. GOOGLE_CREDENTIALS_JSON — paste full JSON contents (Railway)
-#   2. GOOGLE_APPLICATION_CREDENTIALS — path to JSON key file (local dev)
 # ─────────────────────────────────────────────
 def get_vertex_openai_client() -> openai.OpenAI:
     creds_json_str = os.environ.get("GOOGLE_CREDENTIALS_JSON", "")
@@ -90,7 +81,6 @@ def get_vertex_openai_client() -> openai.OpenAI:
         )
         logger.info("Vertex AI: using Application Default Credentials.")
 
-    # Refresh to get a valid short-lived access token
     credentials.refresh(GoogleAuthRequest())
 
     return openai.OpenAI(
@@ -124,7 +114,7 @@ app = FastAPI(title="TasteMatch API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten to your Vercel URL before going live
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -138,6 +128,7 @@ class SignupRequest(BaseModel):
     password: str
     health_conditions: list[str]   = []
     dietary_preferences: list[str] = []
+    allergies: list[str]           = []
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -185,12 +176,11 @@ def get_rag_context(user_message: str, n_results: int = 3) -> str:
         return ""
 
 # ─────────────────────────────────────────────
-# Vertex AI helper — call Llama via OpenAI-compatible endpoint
+# Vertex AI helper
 # ─────────────────────────────────────────────
 def call_vertex_ai(system_prompt: str, history: list[dict], user_message: str) -> str:
     client = get_vertex_openai_client()
 
-    # Build messages list: system prompt + conversation history + new message
     messages = [{"role": "system", "content": system_prompt}]
     for turn in history:
         messages.append({"role": turn["role"], "content": turn["content"]})
@@ -220,6 +210,7 @@ async def health_check():
 
 @app.post("/auth/signup")
 async def signup(req: SignupRequest):
+    # 1. Create Supabase auth user
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"{SUPABASE_URL}/auth/v1/signup",
@@ -236,11 +227,13 @@ async def signup(req: SignupRequest):
     session      = data.get("session") or {}
     access_token = data.get("access_token") or session.get("access_token")
 
+    # 2. Save health profile
+    # Note: user_profiles.id = auth user id (no separate user_id column)
     admin_supabase.table("user_profiles").upsert({
-        "user_id":             user_id,
+        "id":                  user_id,
         "health_conditions":   req.health_conditions,
         "dietary_preferences": req.dietary_preferences,
-        "created_at":          datetime.now(timezone.utc).isoformat(),
+        "allergies":           req.allergies,
     }).execute()
 
     logger.info(f"New signup: {user_id}")
@@ -269,40 +262,42 @@ async def login(req: LoginRequest):
 
 @app.post("/chat/session")
 async def create_session(req: SessionRequest, user=Depends(get_current_user)):
+    # Note: chat_sessions has no title column — just user_id
     result = admin_supabase.table("chat_sessions").insert({
-        "user_id":    user["id"],
-        "title":      req.title,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "user_id": user["id"],
     }).execute()
 
     session = result.data[0]
-    return {"session_id": session["id"], "title": session["title"]}
+    return {"session_id": session["id"]}
 
 
 @app.post("/chat/message")
 async def send_message(req: MessageRequest, user=Depends(get_current_user)):
     user_id = user["id"]
 
-    # 2. Health profile
+    # 2. Health profile — user_profiles.id = user_id
     profile_result = (
         admin_supabase.table("user_profiles")
-        .select("health_conditions, dietary_preferences")
-        .eq("user_id", user_id)
+        .select("health_conditions, dietary_preferences, allergies")
+        .eq("id", user_id)
         .single()
         .execute()
     )
     profile    = profile_result.data or {}
     conditions = profile.get("health_conditions") or []
     prefs      = profile.get("dietary_preferences") or []
+    allergies  = profile.get("allergies") or []
 
     # 3. System prompt
     conditions_str = ", ".join(conditions) if conditions else "no specific health conditions"
     prefs_str      = ", ".join(prefs)      if prefs      else "no specific dietary restrictions"
+    allergies_str  = ", ".join(allergies)  if allergies  else "no known allergies"
 
     system_prompt = (
         f"You are TasteMatch, a helpful and friendly nutrition assistant. "
         f"This user has the following health conditions: {conditions_str}. "
         f"Their dietary preferences: {prefs_str}. "
+        f"Their allergies: {allergies_str}. "
         f"Always tailor your food and recipe advice to their specific health needs. "
         f"Be warm, encouraging, and practical. Keep responses to 2-3 paragraphs."
     )
@@ -313,6 +308,7 @@ async def send_message(req: MessageRequest, user=Depends(get_current_user)):
         system_prompt += rag_context
 
     # 5. Conversation history (last 10 turns)
+    # Note: chat_messages has no user_id column — filter by session_id only
     history_result = (
         admin_supabase.table("chat_messages")
         .select("role, content")
@@ -323,7 +319,7 @@ async def send_message(req: MessageRequest, user=Depends(get_current_user)):
     )
     history = history_result.data or []
 
-    # 6. Call Vertex AI (Llama via OpenAI-compatible endpoint)
+    # 6. Call Vertex AI
     try:
         ai_response = call_vertex_ai(system_prompt, history, req.message)
     except Exception as e:
@@ -331,10 +327,11 @@ async def send_message(req: MessageRequest, user=Depends(get_current_user)):
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
 
     # 7. Save to Supabase
+    # Note: chat_messages has no user_id column
     now = datetime.now(timezone.utc).isoformat()
     admin_supabase.table("chat_messages").insert([
-        {"session_id": req.session_id, "user_id": user_id, "role": "user",      "content": req.message,  "created_at": now},
-        {"session_id": req.session_id, "user_id": user_id, "role": "assistant",  "content": ai_response,  "created_at": now},
+        {"session_id": req.session_id, "role": "user",      "content": req.message,  "created_at": now},
+        {"session_id": req.session_id, "role": "assistant", "content": ai_response,  "created_at": now},
     ]).execute()
 
     return {
