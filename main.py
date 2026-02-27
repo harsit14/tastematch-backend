@@ -263,13 +263,13 @@ async def login(req: LoginRequest):
 
 @app.post("/chat/session")
 async def create_session(req: SessionRequest, user=Depends(get_current_user)):
-    # Note: chat_sessions has no title column — just user_id
     result = admin_supabase.table("chat_sessions").insert({
         "user_id": user["id"],
+        "title":   req.title,
     }).execute()
 
     session = result.data[0]
-    return {"session_id": session["id"]}
+    return {"session_id": session["id"], "title": session["title"]}
 
 
 @app.post("/chat/message")
@@ -328,11 +328,10 @@ async def send_message(req: MessageRequest, user=Depends(get_current_user)):
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
 
     # 7. Save to Supabase
-    # Note: chat_messages has no user_id column
     now = datetime.now(timezone.utc).isoformat()
     admin_supabase.table("chat_messages").insert([
-        {"session_id": req.session_id, "role": "user",      "content": req.message,  "created_at": now},
-        {"session_id": req.session_id, "role": "assistant", "content": ai_response,  "created_at": now},
+        {"session_id": req.session_id, "user_id": user_id, "role": "user",      "content": req.message,  "created_at": now},
+        {"session_id": req.session_id, "user_id": user_id, "role": "assistant", "content": ai_response,  "created_at": now},
     ]).execute()
 
     return {
