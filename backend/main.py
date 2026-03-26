@@ -752,17 +752,11 @@ async def get_meals(
 async def log_body_metrics(req: BodyMetricsRequest, user=Depends(get_current_user)):
     now = datetime.now(timezone.utc).isoformat()
 
-    # Auto-calculate BMI if weight and height provided but BMI not given
-    bmi = req.bmi
-    if bmi is None and req.weight_kg and req.height_cm:
-        height_m = req.height_cm / 100
-        bmi = round(req.weight_kg / (height_m ** 2), 1)
 
     result = admin_supabase.table("body_metrics").insert({
         "user_id":     user["id"],
         "weight_kg":   req.weight_kg,
         "height_cm":   req.height_cm,
-        "bmi":         bmi,
         "recorded_at": req.recorded_at or now,
     }).execute()
     return result.data[0]
