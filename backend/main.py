@@ -82,10 +82,6 @@ VERTEX_PROJECT  = os.environ.get("VERTEX_PROJECT", "tastematch-pilot")
 VERTEX_LOCATION = os.environ.get("VERTEX_LOCATION", "us-central1")
 VERTEX_MODEL    = os.environ.get("VERTEX_MODEL", "meta/llama-3.3-70b-instruct-maas")
 
-CHROMA_HOST       = os.environ.get("CHROMA_HOST", "")
-CHROMA_PORT       = int(os.environ.get("CHROMA_PORT", "8001"))
-CHROMA_COLLECTION = os.environ.get("CHROMA_COLLECTION", "nutrition_data")
-
 # USDA FoodData Central API key — get free at https://fdc.nal.usda.gov/api-guide.html
 USDA_API_KEY = os.environ.get("USDA_API_KEY", "DEMO_KEY")
 
@@ -128,20 +124,37 @@ def get_vertex_openai_client() -> openai.OpenAI:
     )
 
 # ─────────────────────────────────────────────
-# Chroma (stub until Phase 3)
+# Vertex AI text embeddings
 # ─────────────────────────────────────────────
-chroma_collection = None
-
-if CHROMA_HOST:
+def get_embedding(text: str) -> list[float]:
+    """Generate a 768-dim embedding using Vertex AI text-embedding-004."""
     try:
-        import chromadb
-        chroma_client     = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
-        chroma_collection = chroma_client.get_collection(CHROMA_COLLECTION)
-        logger.info(f"Chroma connected: {CHROMA_HOST}:{CHROMA_PORT} / {CHROMA_COLLECTION}")
+        import vertexai
+        from vertexai.language_models import TextEmbeddingModel
+
+        creds_json_str = os.environ.get("GOOGLE_CREDENTIALS_JSON", "")
+        if creds_json_str:
+            from google.oauth2 import service_account
+            creds_dict  = json.loads(creds_json_str)
+            credentials = service_account.Credentials.from_service_account_info(
+                creds_dict,
+                scopes=["https://www.googleapis.com/auth/cloud-platform"]
+            )
+            vertexai.init(
+                project=VERTEX_PROJECT,
+                location=VERTEX_LOCATION,
+                credentials=credentials
+            )
+        else:
+            vertexai.init(project=VERTEX_PROJECT, location=VERTEX_LOCATION)
+
+        model = TextEmbeddingModel.from_pretrained("text-embedding-004")
+        result = model.get_embeddings([text])
+        return result[0].values
     except Exception as e:
-        logger.warning(f"Chroma connection failed — RAG disabled. {e}")
-else:
-    logger.info("CHROMA_HOST not set — stub mode.")
+        logger.warning(f"Embedding failed: {e}")
+        return []
+
 
 # ─────────────────────────────────────────────
 # FastAPI app
@@ -250,16 +263,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 # RAG helper
 # ─────────────────────────────────────────────
 def get_rag_context(user_message: str, n_results: int = 3) -> str:
-    if chroma_collection is None:
-        return ""
+    """Retrieve relevant nutrition docs from Supabase pgvector."""
     try:
-        results = chroma_collection.query(query_texts=[user_message], n_results=n_results)
-        docs = results.get("documents", [[]])[0]
+        embedding = get_embedding(user_message)
+        if not embedding:
+            return ""
+
+        result = admin_supabase.rpc("match_nutrition_documents", {
+            "query_embedding": embedding,
+            "match_count": n_results,
+        }).execute()
+
+        docs = result.data or []
         if not docs:
             return ""
-        return "\n\nRelevant nutrition info from our dataset:\n" + "\n".join(f"- {d}" for d in docs)
+
+        return "\n\nRelevant nutrition info from our knowledge base:\n" + \
+               "\n".join(f"- {d['content']}" for d in docs)
     except Exception as e:
-        logger.warning(f"Chroma query failed: {e}")
+        logger.warning(f"pgvector RAG query failed: {e}")
         return ""
 
 # ─────────────────────────────────────────────
@@ -484,7 +506,7 @@ def build_user_context(user_id: str) -> str:
 async def health_check():
     return {
         "status": "ok",
-        "chroma_connected": chroma_collection is not None,
+        "rag": "pgvector",
         "vertex_model": VERTEX_MODEL,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
@@ -686,7 +708,7 @@ async def send_message(req: MessageRequest, user=Depends(get_current_user)):
 
     return {
         "response": ai_response,
-        "rag_used": chroma_collection is not None and bool(rag_context),
+        "rag_used": bool(rag_context),
     }
 
 # ── Glucose ───────────────────────────────────────────────────────────────────
