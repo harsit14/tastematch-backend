@@ -13,6 +13,7 @@ User:
 Chat:
   POST /chat/session
   GET  /chat/sessions
+  GET  /chat/sessions/{session_id}/messages
   POST /chat/message
 
 Glucose:
@@ -597,6 +598,29 @@ async def get_sessions(user=Depends(get_current_user)):
         .select("id, title, created_at, updated_at")
         .eq("user_id", user["id"])
         .order("updated_at", desc=True)
+        .execute()
+    )
+    return result.data or []
+
+
+@app.get("/chat/sessions/{session_id}/messages")
+async def get_session_messages(session_id: str, user=Depends(get_current_user)):
+    # Verify session belongs to this user
+    session = (
+        admin_supabase.table("chat_sessions")
+        .select("id")
+        .eq("id", session_id)
+        .eq("user_id", user["id"])
+        .execute()
+    )
+    if not session.data:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    result = (
+        admin_supabase.table("chat_messages")
+        .select("id, session_id, role, content, created_at")
+        .eq("session_id", session_id)
+        .order("created_at", desc=False)
         .execute()
     )
     return result.data or []

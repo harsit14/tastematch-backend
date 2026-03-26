@@ -1,0 +1,133 @@
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1100px) {
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 960px) {
+  .mainGrid { grid-template-columns: 1fr; }
+}
+
+.chartCard {
+  min-height: 320px;
+}
+
+.mealsCard {
+  min-height: 320px;
+}
+
+.noData {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  padding: 32px 0;
+  text-align: center;
+  font-style: italic;
+  font-family: var(--font-display);
+}
+
+.mealList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.mealItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mealItem:last-child {
+  border-bottom: none;
+}
+
+.mealInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.mealName {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mealTime {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+}
+
+.mealMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mealCarbs {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.insightBanner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  background-color: rgba(215, 179, 81, 0.08);
+  border: 1px solid rgba(215, 179, 81, 0.25);
+  border-radius: var(--radius-lg);
+}
+
+.insightIcon {
+  width: 36px;
+  height: 36px;
+  background-color: rgba(215, 179, 81, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a07820;
+  flex-shrink: 0;
+}
+
+.insightText {
+  flex: 1;
+}
+
+.insightText strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #a07820;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.insightText p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}

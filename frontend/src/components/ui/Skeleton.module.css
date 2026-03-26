@@ -1,0 +1,47 @@
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--frozen-water) 25%,
+    var(--azure-mist) 50%,
+    var(--frozen-water) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite linear;
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+.rounded {
+  border-radius: var(--radius-full);
+}
+
+.mb {
+  margin-bottom: 8px;
+}
+
+/* Composed patterns */
+.card {
+  padding: 24px;
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.listItemLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

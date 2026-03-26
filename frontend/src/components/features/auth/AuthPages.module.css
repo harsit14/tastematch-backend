@@ -1,0 +1,228 @@
+.page {
+  display: flex;
+  min-height: 100vh;
+}
+
+.decorPanel {
+  flex: 1;
+  background-color: var(--jungle-teal);
+  background-image:
+    radial-gradient(ellipse at 30% 20%, rgba(164, 195, 178, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(42, 56, 48, 0.4) 0%, transparent 50%);
+  display: flex;
+  align-items: flex-end;
+  padding: 64px;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .decorPanel { display: none; }
+}
+
+.decorContent {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.decorQuote {
+  max-width: 400px;
+}
+
+.decorQuote p {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 300;
+  font-style: italic;
+  color: rgba(246, 255, 248, 0.95);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+.decorQuote span {
+  font-size: 0.875rem;
+  color: rgba(246, 255, 248, 0.6);
+  letter-spacing: 0.04em;
+}
+
+.decorOrbs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.orb1 {
+  position: absolute;
+  top: 10%;
+  right: 15%;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(204, 227, 222, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.orb2 {
+  position: absolute;
+  top: 40%;
+  left: 5%;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(164, 195, 178, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.orb3 {
+  position: absolute;
+  bottom: 20%;
+  right: 30%;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(246, 255, 248, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.formPanel {
+  width: 520px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 64px;
+  background-color: var(--mint-cream);
+}
+
+@media (max-width: 768px) {
+  .formPanel {
+    width: 100%;
+    padding: 40px 28px;
+  }
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  width: 36px;
+  height: 36px;
+  background-color: var(--jungle-teal);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.logoLabel {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.formHead {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formTitle {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.formSubtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.selectWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.selectLabel {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.select {
+  height: 42px;
+  padding: 0 14px;
+  background-color: var(--surface-raised);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  transition: border-color var(--transition-fast);
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+.select:focus {
+  border-color: var(--jungle-teal);
+  box-shadow: 0 0 0 3px rgba(107, 144, 128, 0.12);
+}
+
+.formInfo {
+  font-size: 0.875rem;
+  color: #1a6b3c;
+  background-color: rgba(26, 107, 60, 0.06);
+  border: 1px solid rgba(26, 107, 60, 0.2);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+}
+
+.formError {
+  font-size: 0.875rem;
+  color: #c0392b;
+  background-color: rgba(192, 57, 43, 0.06);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+}
+
+.switchText {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.switchLink {
+  color: var(--jungle-teal);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

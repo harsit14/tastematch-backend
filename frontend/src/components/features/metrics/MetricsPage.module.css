@@ -1,0 +1,133 @@
+.latestRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .latestRow { grid-template-columns: repeat(2, 1fr); }
+}
+
+.latestCard {
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow var(--transition-fast);
+}
+
+.latestCard:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.latestLabel {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.latestValue {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.latestNum {
+  font-family: var(--font-display);
+  font-size: 1.875rem;
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+.latestUnit {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.chartCard {
+  margin-bottom: 20px;
+}
+
+.loading {
+  padding: 48px;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  font-family: var(--font-display);
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.item:last-child { border-bottom: none; }
+
+.itemDate {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  min-width: 120px;
+}
+
+.itemStats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.itemStat {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.itemStat strong {
+  color: var(--text-primary);
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bmiPreview {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  padding: 10px 14px;
+  background-color: var(--surface-sunken);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.error {
+  font-size: 0.875rem;
+  color: #c0392b;
+  padding: 10px 14px;
+  background-color: rgba(192, 57, 43, 0.06);
+  border-radius: var(--radius-md);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+}

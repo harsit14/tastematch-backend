@@ -1,0 +1,217 @@
+.loading {
+  padding: 80px;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+}
+
+.recipeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.recipeCard {
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow var(--transition-base), transform var(--transition-base), border-color var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+}
+
+.recipeCard:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  border-color: var(--border-default);
+}
+
+.recipeCardAccent {
+  height: 4px;
+  background: linear-gradient(90deg, var(--jungle-teal), var(--muted-teal));
+}
+
+.recipeCardBody {
+  padding: 20px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.recipeTitle {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.recipeDate {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+}
+
+.recipeNutrition {
+  display: flex;
+  gap: 16px;
+}
+
+.recipeNutritionItem {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.recipeNutritionValue {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: var(--jungle-teal);
+}
+
+.recipeNutritionLabel {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.recipeTags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.moreTagsLabel {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+}
+
+/* Modal detail */
+.recipeDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.recipeDetailNutrition {
+  display: flex;
+  gap: 28px;
+  padding: 16px 20px;
+  background-color: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.recipeDetailStat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recipeDetailStatValue {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--jungle-teal);
+}
+
+.recipeDetailStatLabel {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.recipeInstructions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recipeInstructionsTitle {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.recipeInstructionsText {
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  line-height: 1.75;
+  white-space: pre-line;
+}
+
+.recipeDetailActions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Modal form */
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.textareaWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.textareaLabel {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.textarea {
+  padding: 12px 14px;
+  background-color: var(--surface-raised);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  resize: vertical;
+  outline: none;
+  line-height: 1.6;
+  transition: border-color var(--transition-fast);
+}
+
+.textarea:focus {
+  border-color: var(--jungle-teal);
+  box-shadow: 0 0 0 3px rgba(107, 144, 128, 0.12);
+}
+
+.error {
+  font-size: 0.875rem;
+  color: #c0392b;
+  padding: 10px 14px;
+  background-color: rgba(192, 57, 43, 0.06);
+  border-radius: var(--radius-md);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+}

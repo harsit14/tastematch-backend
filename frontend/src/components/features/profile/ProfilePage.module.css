@@ -1,0 +1,167 @@
+.loading {
+  padding: 80px;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+}
+
+.editActions {
+  display: flex;
+  gap: 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.selectWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.selectLabel {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.select {
+  height: 42px;
+  padding: 0 14px;
+  background-color: var(--surface-raised);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+}
+
+.select:focus {
+  border-color: var(--jungle-teal);
+  box-shadow: 0 0 0 3px rgba(107, 144, 128, 0.12);
+}
+
+/* Detail rows */
+.detailList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.detailRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 12px;
+}
+
+.detailRow:last-child { border-bottom: none; }
+
+.detailLabel {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
+.detailValue {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: right;
+}
+
+/* Tags */
+.tagGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tagToggle {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1.5px solid var(--border-default);
+  background-color: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all var(--transition-fast);
+}
+
+.tagToggle:hover {
+  border-color: var(--jungle-teal);
+  color: var(--jungle-teal);
+}
+
+.tagToggleActive {
+  background-color: var(--jungle-teal);
+  border-color: var(--jungle-teal);
+  color: white;
+}
+
+.tagToggleDanger {
+  color: var(--text-secondary);
+}
+
+.tagToggleDanger:hover {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+.tagToggleDangerActive {
+  background-color: rgba(192, 57, 43, 0.1);
+  border-color: rgba(192, 57, 43, 0.4);
+  color: #c0392b;
+}
+
+.tagDisplay {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 32px;
+  align-items: center;
+}
+
+.emptyText {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-style: italic;
+  font-family: var(--font-display);
+}
+
+.error {
+  margin-top: 16px;
+  font-size: 0.875rem;
+  color: #c0392b;
+  padding: 10px 14px;
+  background-color: rgba(192, 57, 43, 0.06);
+  border-radius: var(--radius-md);
+}
