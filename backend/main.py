@@ -508,13 +508,20 @@ async def signup(req: SignupRequest):
     user_id      = data["user"]["id"]
     session      = data.get("session") or {}
     access_token = data.get("access_token") or session.get("access_token")
-
     now = datetime.now(timezone.utc).isoformat()
+    calculated_age = None
+    if req.date_of_birth:
+      from datetime import date
+      dob = date.fromisoformat(req.date_of_birth)
+      today = date.today()
+      calculated_age = today.year - dob.year - (
+        (today.month, today.day) < (dob.month, dob.day)
+      )
     admin_supabase.table("user_profiles").upsert({
         "id":                  user_id,
         "first_name":          req.first_name,
         "last_name":           req.last_name,
-        "age":                 req.age,
+        "age":                 calculated_age,
         "date_of_birth":       req.date_of_birth,
         "diabetes_type":       req.diabetes_type,
         "dietary_preferences": req.dietary_preferences,
