@@ -155,7 +155,7 @@ def get_embedding(text: str) -> list[float]:
         logger.warning(f"Embedding failed: {e}")
         return []
 
-
+      
 # ─────────────────────────────────────────────
 # FastAPI app
 # ─────────────────────────────────────────────
@@ -668,6 +668,9 @@ async def send_message(req: MessageRequest, user=Depends(get_current_user)):
         "Use the user's health data below to personalise every response. "
         "When the user has items in their fridge, suggest recipes using those ingredients. "
         "When glucose readings are high, recommend low-glycaemic options. "
+        "When suggesting recipes, assess their likely glycemic impact based on "
+        "ingredients and cooking method even when explicit GI values are not listed. "
+        "Flag high-GI ingredients and suggest lower-GI swaps where appropriate. "
         "Be warm, practical, and concise — 2 to 3 paragraphs max.\n\n"
         f"{user_context}"
     )
