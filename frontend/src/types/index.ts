@@ -103,12 +103,23 @@ export interface ChatSession {
   updated_at: string
 }
 
+export interface ChatRecipe {
+  title: string
+  instructions: string
+  ingredients: string[]
+  tags: string[]
+  carbs_per_serving: number | null
+  calories_per_serving: number | null
+  servings: number | null
+}
+
 export interface ChatMessage {
   id: string
   session_id: string
   role: 'user' | 'assistant'
   content: string
   created_at: string
+  recipe?: ChatRecipe
 }
 
 export interface AuthState {

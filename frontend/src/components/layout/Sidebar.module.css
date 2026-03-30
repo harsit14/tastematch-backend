@@ -10,6 +10,13 @@
   flex-direction: column;
   z-index: 100;
   padding: 0 0 24px;
+  transform: translateX(0);
+  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.sidebarClosed {
+  transform: translateX(-100%);
 }
 
 .brand {
@@ -17,6 +24,7 @@
   align-items: center;
   gap: 12px;
   padding: 28px 20px 24px;
+  padding-top: max(28px, calc(28px + env(safe-area-inset-top)));
 }
 
 .logoMark {
@@ -180,4 +188,14 @@
 .signOutBtn:hover {
   color: #c0392b;
   background-color: rgba(192, 57, 43, 0.06);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    box-shadow: 4px 0 24px rgba(42, 56, 48, 0.15);
+  }
+
+  .footer {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
 }

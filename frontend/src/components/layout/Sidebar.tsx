@@ -3,6 +3,11 @@ import { motion } from 'framer-motion'
 import { useAuthStore } from '@/lib/authStore'
 import styles from './Sidebar.module.css'
 
+interface SidebarProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Overview', icon: GridIcon },
   { path: '/glucose', label: 'Glucose', icon: ActivityIcon },
@@ -15,7 +20,7 @@ const NAV_ITEMS = [
   { path: '/profile', label: 'Profile', icon: UserIcon },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { clearAuth, user } = useAuthStore()
   const navigate = useNavigate()
 
@@ -25,7 +30,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={`${styles.sidebar} ${!isOpen ? styles.sidebarClosed : ''}`}>
       <div className={styles.brand}>
         <div className={styles.logoMark}>
           <LeafIcon />

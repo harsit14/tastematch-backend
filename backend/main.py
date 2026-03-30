@@ -596,6 +596,12 @@ async def update_profile(req: ProfileUpdateRequest, user=Depends(get_current_use
     updates = {k: v for k, v in req.model_dump().items() if v is not None}
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
+    if "date_of_birth" in updates:
+        from datetime import date as _date
+        dob = _date.fromisoformat(updates["date_of_birth"])
+        today = _date.today()
+        updates["age"] = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+
     result = (
         admin_supabase.table("user_profiles")
         .update(updates)
@@ -672,6 +678,17 @@ async def send_message(req: MessageRequest, user=Depends(get_current_user)):
         "ingredients and cooking method even when explicit GI values are not listed. "
         "Flag high-GI ingredients and suggest lower-GI swaps where appropriate. "
         "Be warm, practical, and concise — 2 to 3 paragraphs max.\n\n"
+        "IMPORTANT: When you suggest a specific named recipe, append a JSON block at the "
+        "very end of your response (after all other text) using this exact format — no "
+        "markdown fences, just the tags and valid JSON:\n"
+        "<recipe_json>\n"
+        "{\"title\": \"Recipe name\", \"instructions\": \"Full step-by-step instructions.\", "
+        "\"ingredients\": [\"ingredient 1\", \"ingredient 2\"], "
+        "\"tags\": [\"low-gi\", \"quick\"], "
+        "\"carbs_per_serving\": null, \"calories_per_serving\": null, \"servings\": null}\n"
+        "</recipe_json>\n"
+        "Only include this block when you are suggesting one specific recipe. "
+        "Do NOT include it for general advice or when listing multiple recipe ideas.\n\n"
         f"{user_context}"
     )
 
@@ -697,6 +714,18 @@ async def send_message(req: MessageRequest, user=Depends(get_current_user)):
         logger.error(f"Vertex AI error: {e}")
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
 
+    # Extract structured recipe block if present
+    import re as _re, json as _json
+    _recipe_pattern = _re.compile(r'<recipe_json>\s*(\{.*?\})\s*</recipe_json>', _re.DOTALL)
+    recipe_data = None
+    _match = _recipe_pattern.search(ai_response)
+    if _match:
+        try:
+            recipe_data = _json.loads(_match.group(1))
+        except Exception:
+            pass
+        ai_response = _recipe_pattern.sub('', ai_response).strip()
+
     # Save messages
     now = datetime.now(timezone.utc).isoformat()
     admin_supabase.table("chat_messages").insert([
@@ -704,14 +733,25 @@ async def send_message(req: MessageRequest, user=Depends(get_current_user)):
         {"session_id": req.session_id, "user_id": user_id, "role": "assistant", "content": ai_response,  "created_at": now},
     ]).execute()
 
-    # Update session updated_at
-    admin_supabase.table("chat_sessions").update(
-        {"updated_at": now}
-    ).eq("id", req.session_id).execute()
+    # Auto-title session on first message
+    existing = (
+        admin_supabase.table("chat_messages")
+        .select("id", count="exact")
+        .eq("session_id", req.session_id)
+        .execute()
+    )
+    session_update: dict = {"updated_at": now}
+    if (existing.count or 0) <= 2:  # just the two we inserted above
+        msg = req.message.strip()
+        title = msg if len(msg) <= 50 else msg[:50].rsplit(" ", 1)[0] + "…"
+        session_update["title"] = title
+
+    admin_supabase.table("chat_sessions").update(session_update).eq("id", req.session_id).execute()
 
     return {
         "response": ai_response,
         "rag_used": bool(rag_context),
+        "recipe": recipe_data,
     }
 
 # ── Glucose ───────────────────────────────────────────────────────────────────

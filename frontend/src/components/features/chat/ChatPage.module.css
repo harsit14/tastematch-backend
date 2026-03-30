@@ -332,3 +332,64 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* Recipe save card */
+.recipeCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 10px 14px;
+  background-color: var(--azure-mist);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.recipeCardInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.recipeCardTitle {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saveRecipeBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: var(--jungle-teal);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.saveRecipeBtn:hover:not(:disabled) {
+  background-color: #5a7a6c;
+}
+
+.saveRecipeBtn:disabled {
+  cursor: default;
+}
+
+.saveRecipeBtnSaved {
+  background-color: #4a7c63;
+  opacity: 0.85;
+}

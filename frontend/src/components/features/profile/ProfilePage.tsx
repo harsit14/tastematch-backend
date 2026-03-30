@@ -72,6 +72,18 @@ export default function ProfilePage() {
   const toggleArrayItem = (arr: string[], item: string): string[] =>
     arr.includes(item) ? arr.filter((i) => i !== item) : [...arr, item]
 
+  const displayAge = (() => {
+    const dob = profile?.date_of_birth
+    if (!dob) return null
+    const birth = new Date(dob)
+    if (isNaN(birth.getTime())) return null
+    const today = new Date()
+    let age = today.getFullYear() - birth.getFullYear()
+    const m = today.getMonth() - birth.getMonth()
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+    return age
+  })()
+
   if (isLoading) {
     return (
       <div>
@@ -119,7 +131,7 @@ export default function ProfilePage() {
             <div className={styles.detailList}>
               <DetailRow label="Name" value={`${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim() || '--'} />
               <DetailRow label="Date of birth" value={profile?.date_of_birth ? formatDate(profile.date_of_birth) : '--'} />
-              <DetailRow label="Age" value={profile?.age ? `${profile.age} years` : '--'} />
+              <DetailRow label="Age" value={displayAge !== null ? `${displayAge} years` : '--'} />
               <DetailRow
                 label="Diabetes type"
                 value={
