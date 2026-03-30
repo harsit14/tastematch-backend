@@ -18,6 +18,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [savedMsgIds, setSavedMsgIds] = useState<Set<string>>(new Set())
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -53,13 +54,18 @@ export default function ChatPage() {
     mutationFn: (sessionId: string) => api.delete(`/chat/sessions/${sessionId}`, token ?? undefined),
     onSuccess: (_, sessionId) => {
       qc.invalidateQueries({ queryKey: ['chat-sessions'] })
+      qc.removeQueries({ queryKey: ['chat-messages', sessionId] })
       if (activeSessionId === sessionId) {
         setActiveSessionId(null)
         setMessages([])
       }
+      setPendingDeleteId(null)
       toast('Conversation deleted', 'info')
     },
-    onError: () => toast('Failed to delete conversation', 'error'),
+    onError: () => {
+      setPendingDeleteId(null)
+      toast('Failed to delete conversation', 'error')
+    },
   })
 
   const saveRecipeMutation = useMutation({
@@ -160,18 +166,32 @@ export default function ChatPage() {
                     {new Date(session.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                   </span>
                 </button>
-                <button
-                  className={styles.deleteSessionBtn}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (window.confirm('Delete this conversation?')) {
-                      deleteSessionMutation.mutate(session.id)
-                    }
-                  }}
-                  aria-label="Delete conversation"
-                >
-                  <TrashIconSm />
-                </button>
+                {pendingDeleteId === session.id ? (
+                  <div className={styles.deleteConfirm} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className={styles.deleteConfirmYes}
+                      onClick={(e) => { e.stopPropagation(); deleteSessionMutation.mutate(session.id) }}
+                      aria-label="Confirm delete"
+                    >
+                      <CheckIconSm />
+                    </button>
+                    <button
+                      className={styles.deleteConfirmNo}
+                      onClick={(e) => { e.stopPropagation(); setPendingDeleteId(null) }}
+                      aria-label="Cancel"
+                    >
+                      <XIconSm />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className={styles.deleteSessionBtn}
+                    onClick={(e) => { e.stopPropagation(); setPendingDeleteId(session.id) }}
+                    aria-label="Delete conversation"
+                  >
+                    <TrashIconSm />
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -368,6 +388,22 @@ function CheckIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  )
+}
+
+function CheckIconSm() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  )
+}
+
+function XIconSm() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
     </svg>
   )
 }

@@ -59,6 +59,28 @@ export function daysUntilExpiry(dateStr: string): number {
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
 
+// ── Imperial conversions ─────────────────────────────────────────────────────
+
+export const kgToLbs = (kg: number) => Math.round(kg * 2.20462 * 10) / 10
+
+export const lbsToKg = (lbs: number) => Math.round((lbs / 2.20462) * 100) / 100
+
+export function cmToFtIn(cm: number): { ft: number; inches: number } {
+  const totalInches = cm / 2.54
+  const ft = Math.floor(totalInches / 12)
+  const inches = Math.round(totalInches % 12)
+  return { ft, inches }
+}
+
+export function cmToFtInStr(cm: number): string {
+  const { ft, inches } = cmToFtIn(cm)
+  return `${ft}'${inches}"`
+}
+
+export function ftInToCm(ft: number, inches: number): number {
+  return Math.round((ft * 12 + inches) * 2.54 * 10) / 10
+}
+
 export function calcAge(dob: string): number | null {
   const birth = new Date(dob)
   if (isNaN(birth.getTime())) return null

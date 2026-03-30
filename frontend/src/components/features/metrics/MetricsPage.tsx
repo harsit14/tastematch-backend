@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/lib/authStore'
 import { api } from '@/lib/api'
-import { bmiCategory, formatDate } from '@/lib/utils'
+import { bmiCategory, formatDate, kgToLbs, lbsToKg, cmToFtInStr, cmToFtIn, ftInToCm } from '@/lib/utils'
 import type { BodyMetric } from '@/types'
 import PageHeader from '@/components/layout/PageHeader'
 import Card from '@/components/ui/Card'
@@ -22,7 +22,7 @@ export default function MetricsPage() {
   const qc = useQueryClient()
   const { toast } = useToast()
   const [modalOpen, setModalOpen] = useState(false)
-  const [form, setForm] = useState({ weight_kg: '', height_cm: '' })
+  const [form, setForm] = useState({ weight_lbs: '', height_ft: '', height_in: '' })
 
   const { data: metrics, isLoading } = useQuery<BodyMetric[]>({
     queryKey: ['body-metrics'],
@@ -35,18 +35,26 @@ export default function MetricsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['body-metrics'] })
       setModalOpen(false)
-      setForm({ weight_kg: '', height_cm: '' })
+      setForm({ weight_lbs: '', height_ft: '', height_in: '' })
       toast('Measurement saved', 'success')
     },
     onError: () => toast('Failed to save measurement', 'error'),
   })
 
   const handleLog = () => {
-    if (!form.weight_kg) return
-    logMutation.mutate({
-      weight_kg: parseFloat(form.weight_kg),
-      height_cm: form.height_cm ? parseFloat(form.height_cm) : (metrics?.[0]?.height_cm ?? 170),
-    })
+    if (!form.weight_lbs) return
+    const weight_kg = lbsToKg(parseFloat(form.weight_lbs))
+
+    let height_cm: number
+    if (form.height_ft || form.height_in) {
+      height_cm = ftInToCm(parseFloat(form.height_ft || '0'), parseFloat(form.height_in || '0'))
+    } else if (metrics?.[0]?.height_cm) {
+      height_cm = metrics[0].height_cm
+    } else {
+      height_cm = 170
+    }
+
+    logMutation.mutate({ weight_kg, height_cm })
   }
 
   const set = (f: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -55,13 +63,25 @@ export default function MetricsPage() {
   const latest = metrics?.[0]
   const weightData = [...(metrics ?? [])]
     .reverse()
-    .map((m) => ({ date: format(new Date(m.recorded_at), 'MMM d'), weight: m.weight_kg, bmi: m.bmi }))
+    .map((m) => ({
+      date: format(new Date(m.recorded_at), 'MMM d'),
+      weight: kgToLbs(m.weight_kg),
+      bmi: m.bmi,
+    }))
 
   const bmiVariant = (bmi: number): 'success' | 'warning' | 'danger' | 'info' => {
     if (bmi < 18.5) return 'info'
     if (bmi < 25) return 'success'
     if (bmi < 30) return 'warning'
     return 'danger'
+  }
+
+  const bmiFromForm = () => {
+    if (!form.weight_lbs || (!form.height_ft && !form.height_in)) return null
+    const kg = lbsToKg(parseFloat(form.weight_lbs))
+    const cm = ftInToCm(parseFloat(form.height_ft || '0'), parseFloat(form.height_in || '0'))
+    if (!cm) return null
+    return (kg / Math.pow(cm / 100, 2)).toFixed(1)
   }
 
   return (
@@ -73,7 +93,8 @@ export default function MetricsPage() {
           <Button onClick={() => {
             setModalOpen(true)
             if (metrics && metrics.length > 0) {
-              setForm(p => ({ ...p, height_cm: String(metrics[0].height_cm) }))
+              const { ft, inches } = cmToFtIn(metrics[0].height_cm)
+              setForm(p => ({ ...p, height_ft: String(ft), height_in: String(inches) }))
             }
           }}>Log measurement</Button>
         }
@@ -84,15 +105,14 @@ export default function MetricsPage() {
           <div className={styles.latestCard}>
             <span className={styles.latestLabel}>Current weight</span>
             <div className={styles.latestValue}>
-              <span className={styles.latestNum}>{latest.weight_kg}</span>
-              <span className={styles.latestUnit}>kg</span>
+              <span className={styles.latestNum}>{kgToLbs(latest.weight_kg)}</span>
+              <span className={styles.latestUnit}>lbs</span>
             </div>
           </div>
           <div className={styles.latestCard}>
             <span className={styles.latestLabel}>Height</span>
             <div className={styles.latestValue}>
-              <span className={styles.latestNum}>{latest.height_cm}</span>
-              <span className={styles.latestUnit}>cm</span>
+              <span className={styles.latestNum}>{cmToFtInStr(latest.height_cm)}</span>
             </div>
           </div>
           <div className={styles.latestCard}>
@@ -126,7 +146,7 @@ export default function MetricsPage() {
               <YAxis tick={{ fontSize: 11, fill: '#8aaa9c' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
               <Tooltip
                 contentStyle={{ background: 'white', border: '1px solid #cce3de', borderRadius: '8px', fontSize: '12px' }}
-                formatter={(v: number) => [`${v} kg`, 'Weight']}
+                formatter={(v: number) => [`${v} lbs`, 'Weight']}
               />
               <Area type="monotone" dataKey="weight" stroke="#6b9080" strokeWidth={2} fill="url(#weightGrad)" dot={{ r: 3, fill: '#6b9080', strokeWidth: 0 }} />
             </AreaChart>
@@ -150,8 +170,8 @@ export default function MetricsPage() {
               >
                 <span className={styles.itemDate}>{formatDate(m.recorded_at)}</span>
                 <div className={styles.itemStats}>
-                  <span className={styles.itemStat}><strong>{m.weight_kg}</strong> kg</span>
-                  <span className={styles.itemStat}><strong>{m.height_cm}</strong> cm</span>
+                  <span className={styles.itemStat}><strong>{kgToLbs(m.weight_kg)}</strong> lbs</span>
+                  <span className={styles.itemStat}><strong>{cmToFtInStr(m.height_cm)}</strong></span>
                   <span className={styles.itemStat}>BMI <strong>{m.bmi?.toFixed(1)}</strong></span>
                   <Badge variant={bmiVariant(m.bmi)}>{bmiCategory(m.bmi)}</Badge>
                 </div>
@@ -165,14 +185,14 @@ export default function MetricsPage() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Log measurement" size="sm">
         <div className={styles.modalForm}>
-          <Input label="Weight (kg)" type="number" step="0.1" min="20" max="300" placeholder="e.g. 74.5" value={form.weight_kg} onChange={set('weight_kg')} />
-          <Input label="Height (cm)" type="number" step="0.5" min="100" max="250" placeholder="e.g. 170" value={form.height_cm} onChange={set('height_cm')} />
-          {form.weight_kg && form.height_cm && (
+          <Input label="Weight (lbs)" type="number" step="0.1" min="44" max="660" placeholder="e.g. 165" value={form.weight_lbs} onChange={set('weight_lbs')} />
+          <div className={styles.heightRow}>
+            <Input label="Height — feet" type="number" min="3" max="8" placeholder="e.g. 5" value={form.height_ft} onChange={set('height_ft')} />
+            <Input label="Inches" type="number" min="0" max="11" placeholder="e.g. 10" value={form.height_in} onChange={set('height_in')} />
+          </div>
+          {bmiFromForm() && (
             <div className={styles.bmiPreview}>
-              BMI preview:{' '}
-              <strong>
-                {(parseFloat(form.weight_kg) / Math.pow(parseFloat(form.height_cm) / 100, 2)).toFixed(1)}
-              </strong>
+              BMI preview: <strong>{bmiFromForm()}</strong>
             </div>
           )}
           {logMutation.isError && <p className={styles.error}>Failed to log measurement.</p>}

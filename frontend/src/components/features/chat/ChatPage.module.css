@@ -431,3 +431,42 @@
   color: #c0392b;
   background-color: rgba(192, 57, 43, 0.08);
 }
+
+.deleteConfirm {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.deleteConfirmYes,
+.deleteConfirmNo {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.deleteConfirmYes {
+  color: #c0392b;
+}
+
+.deleteConfirmYes:hover {
+  background-color: rgba(192, 57, 43, 0.1);
+}
+
+.deleteConfirmNo {
+  color: var(--text-muted);
+}
+
+.deleteConfirmNo:hover {
+  background-color: var(--surface-overlay);
+}

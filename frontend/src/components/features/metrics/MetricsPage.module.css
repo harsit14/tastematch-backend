@@ -108,6 +108,12 @@
   gap: 16px;
 }
 
+.heightRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .bmiPreview {
   font-size: 0.875rem;
   color: var(--text-secondary);
