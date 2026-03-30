@@ -215,3 +215,123 @@
   gap: 10px;
   padding-top: 8px;
 }
+
+.ingredientSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ingredientRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ingredientInput {
+  flex: 2;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background: var(--surface-base);
+  outline: none;
+}
+
+.ingredientInputSmall {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background: var(--surface-base);
+  outline: none;
+  min-width: 0;
+}
+
+.ingredientInput:focus,
+.ingredientInputSmall:focus {
+  border-color: var(--jungle-teal);
+}
+
+.addIngredientBtn {
+  width: 34px;
+  height: 34px;
+  background-color: var(--jungle-teal);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1.25rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-fast);
+}
+
+.addIngredientBtn:hover {
+  background-color: #5a7a6c;
+}
+
+.ingredientList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ingredientItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.removeIngredientBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.removeIngredientBtn:hover {
+  color: #c0392b;
+}
+
+.recipeIngredients {
+  margin-top: 8px;
+}
+
+.ingredientDisplayList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.ingredientDisplayItem {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.ingredientQty {
+  font-weight: 500;
+  color: var(--text-primary);
+  min-width: 60px;
+}

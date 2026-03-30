@@ -210,3 +210,63 @@
   gap: 10px;
   padding-top: 8px;
 }
+
+.foodSuggestions {
+  list-style: none;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: -4px;
+}
+
+.foodSuggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.foodSuggestion:last-child {
+  border-bottom: none;
+}
+
+.foodSuggestion:hover {
+  background-color: var(--surface-overlay);
+}
+
+.foodSuggestionName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.foodSuggestionMeta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.deleteBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.mealCard:hover .deleteBtn {
+  opacity: 1;
+}
+
+.deleteBtn:hover {
+  color: #c0392b;
+  background-color: rgba(192, 57, 43, 0.08);
+}

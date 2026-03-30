@@ -194,3 +194,34 @@
   gap: 10px;
   padding-top: 8px;
 }
+
+.hypoAlert {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #dc2626;
+  background-color: #fff5f5;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #fca5a5;
+}
+
+.deleteReadingBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+.item:hover .deleteReadingBtn {
+  opacity: 1;
+}
+
+.deleteReadingBtn:hover {
+  color: #c0392b;
+}

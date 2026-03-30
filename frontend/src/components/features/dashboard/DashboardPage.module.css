@@ -131,3 +131,18 @@
   color: var(--text-secondary);
   line-height: 1.5;
 }
+
+.insightBannerSuccess {
+  border-color: var(--muted-teal);
+  background-color: var(--azure-mist);
+}
+
+.insightBannerWarning {
+  border-color: #fbbf24;
+  background-color: #fffbeb;
+}
+
+.insightBannerDanger {
+  border-color: #f87171;
+  background-color: #fff5f5;
+}

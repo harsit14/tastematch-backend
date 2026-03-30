@@ -49,6 +49,19 @@ export default function ChatPage() {
     },
   })
 
+  const deleteSessionMutation = useMutation({
+    mutationFn: (sessionId: string) => api.delete(`/chat/sessions/${sessionId}`, token ?? undefined),
+    onSuccess: (_, sessionId) => {
+      qc.invalidateQueries({ queryKey: ['chat-sessions'] })
+      if (activeSessionId === sessionId) {
+        setActiveSessionId(null)
+        setMessages([])
+      }
+      toast('Conversation deleted', 'info')
+    },
+    onError: () => toast('Failed to delete conversation', 'error'),
+  })
+
   const saveRecipeMutation = useMutation({
     mutationFn: (recipe: ChatRecipe) => api.post('/recipes/save', {
       title: recipe.title,
@@ -137,7 +150,7 @@ export default function ChatPage() {
         {sessions && sessions.length > 0 ? (
           <ul className={styles.sessionList}>
             {sessions.map((session) => (
-              <li key={session.id}>
+              <li key={session.id} className={styles.sessionListItem}>
                 <button
                   className={`${styles.sessionItem} ${activeSessionId === session.id ? styles.sessionItemActive : ''}`}
                   onClick={() => handleSelectSession(session.id)}
@@ -146,6 +159,18 @@ export default function ChatPage() {
                   <span className={styles.sessionDate}>
                     {new Date(session.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                   </span>
+                </button>
+                <button
+                  className={styles.deleteSessionBtn}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (window.confirm('Delete this conversation?')) {
+                      deleteSessionMutation.mutate(session.id)
+                    }
+                  }}
+                  aria-label="Delete conversation"
+                >
+                  <TrashIconSm />
                 </button>
               </li>
             ))}
@@ -343,6 +368,14 @@ function CheckIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  )
+}
+
+function TrashIconSm() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
     </svg>
   )
 }

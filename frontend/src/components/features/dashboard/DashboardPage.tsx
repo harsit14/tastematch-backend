@@ -42,9 +42,20 @@ export default function DashboardPage() {
     enabled: !!token,
   })
 
+  const lowTarget = profile?.glucose_low_target ?? 4.0
+  const highTarget = profile?.glucose_high_target ?? 7.8
+  const carbTarget = profile?.carb_target_grams ?? 130
+
   const latestGlucose = glucoseReadings?.[0]
   const avgGlucose = glucoseReadings?.length
     ? (glucoseReadings.reduce((s, r) => s + r.reading_mmol, 0) / glucoseReadings.length).toFixed(1)
+    : null
+
+  const tirPct = glucoseReadings?.length
+    ? Math.round(
+        (glucoseReadings.filter(r => r.reading_mmol >= lowTarget && r.reading_mmol <= highTarget).length
+         / glucoseReadings.length) * 100
+      )
     : null
 
   const todayCarbs = meals
@@ -98,16 +109,17 @@ export default function DashboardPage() {
           label="Carbs today"
           value={todayCarbs ?? '--'}
           unit="g"
-          accent={Number(todayCarbs) > 130 ? 'warning' : 'teal'}
+          accent={Number(todayCarbs) > carbTarget ? 'warning' : 'teal'}
           delay={0.1}
           icon={<UtensilsIcon />}
         />
         <StatCard
-          label="Meals logged"
-          value={meals?.length ?? 0}
-          accent="neutral"
+          label="Time in range"
+          value={tirPct !== null ? `${tirPct}%` : '--'}
+          unit={tirPct !== null ? `(${lowTarget}–${highTarget} mmol/L)` : undefined}
+          accent={tirPct === null ? 'neutral' : tirPct >= 70 ? 'teal' : tirPct >= 50 ? 'warning' : 'danger'}
           delay={0.15}
-          icon={<ListIcon />}
+          icon={<TargetIcon />}
         />
       </div>
 
@@ -197,27 +209,39 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {latestGlucose && glucoseStatus(latestGlucose.reading_mmol) !== 'normal' && (
+      {latestGlucose && (
         <motion.div
-          className={styles.insightBanner}
+          className={`${styles.insightBanner} ${
+            glucoseStatus(latestGlucose.reading_mmol) === 'low' ? styles.insightBannerDanger :
+            glucoseStatus(latestGlucose.reading_mmol) === 'high' ? styles.insightBannerWarning :
+            glucoseStatus(latestGlucose.reading_mmol) === 'elevated' ? styles.insightBannerWarning :
+            styles.insightBannerSuccess
+          }`}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <div className={styles.insightIcon}>
-            <LightbulbIcon />
-          </div>
+          <div className={styles.insightIcon}><LightbulbIcon /></div>
           <div className={styles.insightText}>
-            <strong>Glucose insight</strong>
+            <strong>
+              {glucoseStatus(latestGlucose.reading_mmol) === 'low' ? 'Low glucose — act now' :
+               glucoseStatus(latestGlucose.reading_mmol) === 'high' ? 'High glucose reading' :
+               glucoseStatus(latestGlucose.reading_mmol) === 'elevated' ? 'Elevated glucose' :
+               'Glucose in range'}
+            </strong>
             <p>
-              Your latest reading of {latestGlucose.reading_mmol} mmol/L is{' '}
-              {glucoseStatus(latestGlucose.reading_mmol)}. Consider asking TasteMatch for
-              low-GI meal suggestions.
+              {glucoseStatus(latestGlucose.reading_mmol) === 'low'
+                ? `Your reading of ${latestGlucose.reading_mmol} mmol/L is below your target. Have 15g of fast-acting carbs immediately.`
+                : glucoseStatus(latestGlucose.reading_mmol) === 'normal'
+                ? `Your latest reading of ${latestGlucose.reading_mmol} mmol/L is within your target range. Keep it up.`
+                : `Your latest reading of ${latestGlucose.reading_mmol} mmol/L is ${glucoseStatusLabel(latestGlucose.reading_mmol).toLowerCase()}. Consider low-GI meal options.`}
             </p>
           </div>
-          <Button variant="secondary" size="sm">
-            <Link to="/chat">Ask TasteMatch</Link>
-          </Button>
+          {glucoseStatus(latestGlucose.reading_mmol) !== 'normal' && (
+            <Button variant="secondary" size="sm">
+              <Link to="/chat">Ask TasteMatch</Link>
+            </Button>
+          )}
         </motion.div>
       )}
     </div>
@@ -238,4 +262,7 @@ function ListIcon() {
 }
 function LightbulbIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18" /><line x1="10" y1="22" x2="14" y2="22" /><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" /></svg>
+}
+function TargetIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
 }

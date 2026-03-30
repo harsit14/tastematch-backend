@@ -28,7 +28,9 @@ export default function RecipesPage() {
     calories_per_serving: '',
     servings: '',
     tags: '',
+    ingredients: [] as { name: string; quantity: string; unit: string }[],
   })
+  const [ingredientDraft, setIngredientDraft] = useState({ name: '', quantity: '', unit: '' })
 
   const { data: recipes, isLoading } = useQuery<SavedRecipe[]>({
     queryKey: ['recipes'],
@@ -41,7 +43,7 @@ export default function RecipesPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recipes'] })
       setModalOpen(false)
-      setForm({ title: '', instructions: '', carbs_per_serving: '', calories_per_serving: '', servings: '', tags: '' })
+      setForm({ title: '', instructions: '', carbs_per_serving: '', calories_per_serving: '', servings: '', tags: '', ingredients: [] })
       toast('Recipe saved', 'success')
     },
     onError: () => toast('Failed to save recipe', 'error'),
@@ -62,7 +64,7 @@ export default function RecipesPage() {
     saveMutation.mutate({
       title: form.title,
       instructions: form.instructions,
-      ingredients: [],
+      ingredients: form.ingredients,
       carbs_per_serving: form.carbs_per_serving ? parseFloat(form.carbs_per_serving) : undefined,
       calories_per_serving: form.calories_per_serving ? parseFloat(form.calories_per_serving) : undefined,
       servings: form.servings ? parseInt(form.servings) : undefined,
@@ -164,6 +166,52 @@ export default function RecipesPage() {
             <label className={styles.textareaLabel}>Instructions</label>
             <textarea className={styles.textarea} placeholder="Write your recipe instructions here..." value={form.instructions} onChange={set('instructions')} rows={5} />
           </div>
+          <div className={styles.ingredientSection}>
+            <label className={styles.textareaLabel}>Ingredients</label>
+            <div className={styles.ingredientRow}>
+              <input
+                className={styles.ingredientInput}
+                placeholder="e.g. Salmon fillet"
+                value={ingredientDraft.name}
+                onChange={(e) => setIngredientDraft(p => ({ ...p, name: e.target.value }))}
+              />
+              <input
+                className={styles.ingredientInputSmall}
+                placeholder="Qty"
+                value={ingredientDraft.quantity}
+                onChange={(e) => setIngredientDraft(p => ({ ...p, quantity: e.target.value }))}
+              />
+              <input
+                className={styles.ingredientInputSmall}
+                placeholder="Unit"
+                value={ingredientDraft.unit}
+                onChange={(e) => setIngredientDraft(p => ({ ...p, unit: e.target.value }))}
+              />
+              <button
+                type="button"
+                className={styles.addIngredientBtn}
+                onClick={() => {
+                  if (!ingredientDraft.name.trim()) return
+                  setForm(p => ({ ...p, ingredients: [...p.ingredients, { ...ingredientDraft }] }))
+                  setIngredientDraft({ name: '', quantity: '', unit: '' })
+                }}
+              >+</button>
+            </div>
+            {form.ingredients.length > 0 && (
+              <ul className={styles.ingredientList}>
+                {form.ingredients.map((ing, i) => (
+                  <li key={i} className={styles.ingredientItem}>
+                    <span>{ing.quantity} {ing.unit} {ing.name}</span>
+                    <button
+                      type="button"
+                      className={styles.removeIngredientBtn}
+                      onClick={() => setForm(p => ({ ...p, ingredients: p.ingredients.filter((_, j) => j !== i) }))}
+                    >×</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           {saveMutation.isError && <p className={styles.error}>Failed to save recipe.</p>}
           <div className={styles.modalActions}>
             <Button variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
@@ -202,6 +250,19 @@ export default function RecipesPage() {
                 {selectedRecipe.tags.map((tag) => (
                   <Badge key={tag} variant="default">{tag}</Badge>
                 ))}
+              </div>
+            )}
+            {selectedRecipe.ingredients && selectedRecipe.ingredients.length > 0 && (
+              <div className={styles.recipeIngredients}>
+                <h4 className={styles.recipeInstructionsTitle}>Ingredients</h4>
+                <ul className={styles.ingredientDisplayList}>
+                  {selectedRecipe.ingredients.map((ing, i) => (
+                    <li key={i} className={styles.ingredientDisplayItem}>
+                      {ing.quantity && <span className={styles.ingredientQty}>{ing.quantity} {ing.unit}</span>}
+                      <span>{ing.name}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
             {selectedRecipe.instructions && (

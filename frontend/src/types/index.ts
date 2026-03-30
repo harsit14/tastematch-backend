@@ -14,6 +14,11 @@ export interface UserProfile {
   allergies: string[]
   created_at: string
   updated_at: string
+  glucose_low_target?: number    // personalised low target mmol/L (default 4.0)
+  glucose_high_target?: number   // personalised high target mmol/L (default 7.8)
+  carb_target_grams?: number     // daily carb goal
+  hba1c?: number                 // most recent HbA1c %
+  hba1c_date?: string
 }
 
 export interface GlucoseReading {

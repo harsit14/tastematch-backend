@@ -49,14 +49,14 @@ import os
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Literal
 
 import httpx
 import openai
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from supabase import create_client, Client
 from google.oauth2 import service_account
 from google.auth import default as google_auth_default
@@ -86,6 +86,8 @@ VERTEX_MODEL    = os.environ.get("VERTEX_MODEL", "meta/llama-3.3-70b-instruct-ma
 USDA_API_KEY = os.environ.get("USDA_API_KEY", "DEMO_KEY")
 
 PORT = int(os.environ.get("PORT", "8000"))
+
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
 # ─────────────────────────────────────────────
 # Supabase admin client
@@ -165,7 +167,7 @@ app = FastAPI(title="TasteMatch API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[FRONTEND_URL, "http://localhost:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -191,46 +193,50 @@ class LoginRequest(BaseModel):
     password: str
 
 class ProfileUpdateRequest(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_name: Optional[str] = Field(None, max_length=100)
+    last_name: Optional[str] = Field(None, max_length=100)
     age: Optional[int] = None
     date_of_birth: Optional[str] = None
-    diabetes_type: Optional[str] = None
+    diabetes_type: Optional[Literal['type1','type2','prediabetes','gestational','other','none']] = None
     dietary_preferences: Optional[list[str]] = None
     allergies: Optional[list[str]] = None
+    glucose_low_target: Optional[float] = Field(None, gt=0, lt=20, description="Personalised low glucose target mmol/L")
+    glucose_high_target: Optional[float] = Field(None, gt=0, lt=30, description="Personalised high glucose target mmol/L")
+    carb_target_grams: Optional[float] = Field(None, ge=0, le=1000, description="Daily carb target in grams")
+    hba1c: Optional[float] = Field(None, ge=3, le=20, description="Most recent HbA1c %")
+    hba1c_date: Optional[str] = None
 
 class SessionRequest(BaseModel):
     title: Optional[str] = "New conversation"
 
 class MessageRequest(BaseModel):
     session_id: str
-    message: str
+    message: str = Field(..., min_length=1, max_length=4000)
 
 class GlucoseRequest(BaseModel):
-    reading_mmol: float                        # blood sugar in mmol/L
-    reading_context: Optional[str] = None      # e.g. "before_meal", "after_meal", "fasting"
-    notes: Optional[str] = None
+    reading_mmol: float = Field(..., gt=0.5, lt=35.0, description="Blood glucose in mmol/L")
+    reading_context: Optional[Literal['fasting','before_meal','after_meal','bedtime','other']] = None
+    notes: Optional[str] = Field(None, max_length=500)
     recorded_at: Optional[str] = None          # ISO datetime, defaults to now
 
 class MealLogRequest(BaseModel):
-    meal_name: str
-    carbs_grams: Optional[float] = None
-    calories: Optional[float] = None
-    meal_type: Optional[str] = None            # e.g. "breakfast", "lunch", "dinner", "snack"
-    notes: Optional[str] = None
+    meal_name: str = Field(..., min_length=1, max_length=200)
+    carbs_grams: Optional[float] = Field(None, ge=0, le=1000)
+    calories: Optional[float] = Field(None, ge=0, le=10000)
+    meal_type: Optional[Literal['breakfast','lunch','dinner','snack']] = None
+    notes: Optional[str] = Field(None, max_length=500)
     eaten_at: Optional[str] = None             # ISO datetime, defaults to now
 
 class BodyMetricsRequest(BaseModel):
-    weight_kg: Optional[float] = None
-    height_cm: Optional[float] = None
-    bmi: Optional[float] = None
+    weight_kg: float = Field(..., gt=10, lt=500)
+    height_cm: float = Field(..., gt=50, lt=300)
     recorded_at: Optional[str] = None
 
 class FridgeItemRequest(BaseModel):
     food_id: Optional[str] = None             # uuid from foods table (if known)
-    food_name: str                             # human-readable name for display
-    quantity: Optional[float] = None
-    unit: Optional[str] = None                # e.g. "g", "ml", "pieces"
+    food_name: str = Field(..., min_length=1, max_length=200)
+    quantity: Optional[float] = Field(None, ge=0)
+    unit: Optional[str] = Field(None, max_length=50)
     expiry_date: Optional[str] = None         # ISO date string
 
 class SaveRecipeRequest(BaseModel):
@@ -415,7 +421,7 @@ def build_user_context(user_id: str) -> str:
     try:
         profile = (
             admin_supabase.table("user_profiles")
-            .select("first_name, diabetes_type, dietary_preferences, allergies")
+            .select("first_name, diabetes_type, dietary_preferences, allergies, glucose_low_target, glucose_high_target, carb_target_grams, hba1c, hba1c_date")
             .eq("id", user_id)
             .single()
             .execute()
@@ -432,6 +438,17 @@ def build_user_context(user_id: str) -> str:
             + (f"Dietary preferences: {', '.join(prefs)}. " if prefs else "")
             + (f"Allergies: {', '.join(allergies)}. " if allergies else "")
         )
+
+        if profile.get("glucose_low_target") or profile.get("glucose_high_target"):
+            context_parts.append(
+                f"Personalised glucose targets: {profile.get('glucose_low_target', 4.0):.1f}–{profile.get('glucose_high_target', 7.8):.1f} mmol/L"
+            )
+        if profile.get("carb_target_grams"):
+            context_parts.append(f"Daily carb target: {profile['carb_target_grams']}g")
+        if profile.get("hba1c"):
+            context_parts.append(
+                f"Most recent HbA1c: {profile['hba1c']}% (recorded {profile.get('hba1c_date', 'unknown date')})"
+            )
     except Exception as e:
         logger.warning(f"Could not fetch profile for context: {e}")
 
@@ -668,6 +685,16 @@ async def get_sessions(user=Depends(get_current_user)):
     return result.data or []
 
 
+@app.delete("/chat/sessions/{session_id}")
+async def delete_session(session_id: str, user=Depends(get_current_user)):
+    existing = admin_supabase.table("chat_sessions").select("id").eq("id", session_id).eq("user_id", user["id"]).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    admin_supabase.table("chat_messages").delete().eq("session_id", session_id).execute()
+    admin_supabase.table("chat_sessions").delete().eq("id", session_id).execute()
+    return {"message": "Session deleted."}
+
+
 @app.get("/chat/sessions/{session_id}/messages")
 async def get_session_messages(session_id: str, user=Depends(get_current_user)):
     # Verify session belongs to this user
@@ -815,6 +842,29 @@ async def get_glucose(
     )
     return result.data or []
 
+
+@app.put("/glucose/{reading_id}")
+async def update_glucose(reading_id: str, req: GlucoseRequest, user=Depends(get_current_user)):
+    existing = admin_supabase.table("glucose_readings").select("id").eq("id", reading_id).eq("user_id", user["id"]).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Reading not found.")
+    updates = {"reading_mmol": req.reading_mmol, "updated_at": datetime.now(timezone.utc).isoformat()}
+    if req.reading_context is not None:
+        updates["reading_context"] = req.reading_context
+    if req.notes is not None:
+        updates["notes"] = req.notes
+    result = admin_supabase.table("glucose_readings").update(updates).eq("id", reading_id).execute()
+    return result.data[0]
+
+
+@app.delete("/glucose/{reading_id}")
+async def delete_glucose(reading_id: str, user=Depends(get_current_user)):
+    existing = admin_supabase.table("glucose_readings").select("id").eq("id", reading_id).eq("user_id", user["id"]).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Reading not found.")
+    admin_supabase.table("glucose_readings").delete().eq("id", reading_id).execute()
+    return {"message": "Reading deleted."}
+
 # ── Meals ─────────────────────────────────────────────────────────────────────
 
 @app.post("/meals")
@@ -835,7 +885,7 @@ async def log_meal(req: MealLogRequest, user=Depends(get_current_user)):
 
 @app.get("/meals")
 async def get_meals(
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=200),
     user=Depends(get_current_user)
 ):
     result = (
@@ -847,6 +897,26 @@ async def get_meals(
         .execute()
     )
     return result.data or []
+
+
+@app.put("/meals/{meal_id}")
+async def update_meal(meal_id: str, req: MealLogRequest, user=Depends(get_current_user)):
+    existing = admin_supabase.table("meal_logs").select("id").eq("id", meal_id).eq("user_id", user["id"]).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Meal not found.")
+    updates = {k: v for k, v in req.model_dump().items() if v is not None}
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = admin_supabase.table("meal_logs").update(updates).eq("id", meal_id).execute()
+    return result.data[0]
+
+
+@app.delete("/meals/{meal_id}")
+async def delete_meal(meal_id: str, user=Depends(get_current_user)):
+    existing = admin_supabase.table("meal_logs").select("id").eq("id", meal_id).eq("user_id", user["id"]).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Meal not found.")
+    admin_supabase.table("meal_logs").delete().eq("id", meal_id).execute()
+    return {"message": "Meal deleted."}
 
 # ── Body Metrics ──────────────────────────────────────────────────────────────
 
@@ -997,12 +1067,13 @@ async def save_recipe(req: SaveRecipeRequest, user=Depends(get_current_user)):
 
 
 @app.get("/recipes")
-async def get_saved_recipes(user=Depends(get_current_user)):
+async def get_saved_recipes(limit: int = Query(50, ge=1, le=200), user=Depends(get_current_user)):
     result = (
         admin_supabase.table("saved_recipes")
         .select("*")
         .eq("user_id", user["id"])
         .order("created_at", desc=True)
+        .limit(limit)
         .execute()
     )
     return result.data or []

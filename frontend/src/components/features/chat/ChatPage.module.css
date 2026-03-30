@@ -393,3 +393,41 @@
   background-color: #4a7c63;
   opacity: 0.85;
 }
+
+.sessionListItem {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.sessionListItem .sessionItem {
+  flex: 1;
+  min-width: 0;
+}
+
+.deleteSessionBtn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 6px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.sessionListItem:hover .deleteSessionBtn {
+  opacity: 1;
+}
+
+.deleteSessionBtn:hover {
+  color: #c0392b;
+  background-color: rgba(192, 57, 43, 0.08);
+}

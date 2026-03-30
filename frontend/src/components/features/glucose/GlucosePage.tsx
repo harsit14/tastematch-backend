@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useAuthStore } from '@/lib/authStore'
 import { api } from '@/lib/api'
 import { glucoseStatus, glucoseStatusLabel, formatDateTime } from '@/lib/utils'
-import type { GlucoseReading } from '@/types'
+import type { GlucoseReading, UserProfile } from '@/types'
 import PageHeader from '@/components/layout/PageHeader'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -18,6 +18,14 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 import { format } from 'date-fns'
 
 const CONTEXT_OPTIONS = ['fasting', 'before_meal', 'after_meal', 'bedtime', 'other']
+
+function TrashIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+    </svg>
+  )
+}
 const BADGE_MAP: Record<string, 'info' | 'success' | 'warning' | 'danger'> = {
   low: 'info', normal: 'success', elevated: 'warning', high: 'danger',
 }
@@ -28,6 +36,14 @@ export default function GlucosePage() {
   const { toast } = useToast()
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState({ reading_mmol: '', reading_context: 'before_meal', notes: '' })
+
+  const { data: profile } = useQuery<UserProfile>({
+    queryKey: ['profile'],
+    queryFn: () => api.get('/profile', token ?? undefined),
+    enabled: !!token,
+  })
+  const lowTarget = profile?.glucose_low_target ?? 4.0
+  const highTarget = profile?.glucose_high_target ?? 7.8
 
   const { data: readings, isLoading } = useQuery<GlucoseReading[]>({
     queryKey: ['glucose'],
@@ -44,6 +60,15 @@ export default function GlucosePage() {
       toast('Glucose reading saved', 'success')
     },
     onError: () => toast('Failed to save reading', 'error'),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/glucose/${id}`, token ?? undefined),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['glucose'] })
+      toast('Reading deleted', 'info')
+    },
+    onError: () => toast('Failed to delete reading', 'error'),
   })
 
   const handleLog = () => {
@@ -118,8 +143,8 @@ export default function GlucosePage() {
               </defs>
               <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#8aaa9c' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
               <YAxis tick={{ fontSize: 10, fill: '#8aaa9c' }} axisLine={false} tickLine={false} domain={[3, 'auto']} />
-              <ReferenceLine y={4} stroke="#93c5fd" strokeDasharray="4 4" strokeWidth={1} />
-              <ReferenceLine y={7.8} stroke="#fcd34d" strokeDasharray="4 4" strokeWidth={1} />
+              <ReferenceLine y={lowTarget} stroke="#93c5fd" strokeDasharray="4 4" strokeWidth={1} />
+              <ReferenceLine y={highTarget} stroke="#fcd34d" strokeDasharray="4 4" strokeWidth={1} />
               <Tooltip
                 contentStyle={{ background: 'white', border: '1px solid #cce3de', borderRadius: '8px', fontSize: '12px' }}
                 formatter={(v: number) => [`${v} mmol/L`]}
@@ -128,8 +153,8 @@ export default function GlucosePage() {
             </LineChart>
           </ResponsiveContainer>
           <div className={styles.chartLegend}>
-            <span className={styles.legendItem} style={{ color: '#93c5fd' }}>-- Low threshold (4.0)</span>
-            <span className={styles.legendItem} style={{ color: '#fcd34d' }}>-- High threshold (7.8)</span>
+            <span className={styles.legendItem} style={{ color: '#93c5fd' }}>-- Low threshold ({lowTarget})</span>
+            <span className={styles.legendItem} style={{ color: '#fcd34d' }}>-- High threshold ({highTarget})</span>
           </div>
         </Card>
       )}
@@ -162,7 +187,19 @@ export default function GlucosePage() {
                       <Badge variant="muted">{r.reading_context.replace('_', ' ')}</Badge>
                     )}
                     <Badge variant={BADGE_MAP[status]}>{glucoseStatusLabel(r.reading_mmol)}</Badge>
+                    {status === 'low' && r.reading_mmol < 3.5 && (
+                      <span className={styles.hypoAlert}>⚠ Hypo — eat now</span>
+                    )}
                     {r.notes && <span className={styles.itemNotes}>{r.notes}</span>}
+                    <button
+                      className={styles.deleteReadingBtn}
+                      onClick={() => {
+                        if (window.confirm('Delete this reading?')) deleteMutation.mutate(r.id)
+                      }}
+                      aria-label="Delete reading"
+                    >
+                      <TrashIcon />
+                    </button>
                   </div>
                 </motion.li>
               )

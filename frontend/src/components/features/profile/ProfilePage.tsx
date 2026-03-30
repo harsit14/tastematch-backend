@@ -36,6 +36,11 @@ export default function ProfilePage() {
     diabetes_type: 'none',
     dietary_preferences: [] as string[],
     allergies: [] as string[],
+    glucose_low_target: '',
+    glucose_high_target: '',
+    carb_target_grams: '',
+    hba1c: '',
+    hba1c_date: '',
   })
 
   const { data: profile, isLoading } = useQuery<UserProfile>({
@@ -53,6 +58,11 @@ export default function ProfilePage() {
         diabetes_type: profile.diabetes_type ?? 'none',
         dietary_preferences: profile.dietary_preferences ?? [],
         allergies: profile.allergies ?? [],
+        glucose_low_target: profile.glucose_low_target?.toString() ?? '',
+        glucose_high_target: profile.glucose_high_target?.toString() ?? '',
+        carb_target_grams: profile.carb_target_grams?.toString() ?? '',
+        hba1c: profile.hba1c?.toString() ?? '',
+        hba1c_date: profile.hba1c_date ?? '',
       })
     }
   }, [profile])
@@ -67,7 +77,14 @@ export default function ProfilePage() {
     onError: () => toast('Failed to update profile', 'error'),
   })
 
-  const handleSave = () => updateMutation.mutate(form)
+  const handleSave = () => updateMutation.mutate({
+    ...form,
+    glucose_low_target: form.glucose_low_target ? parseFloat(form.glucose_low_target) : undefined,
+    glucose_high_target: form.glucose_high_target ? parseFloat(form.glucose_high_target) : undefined,
+    carb_target_grams: form.carb_target_grams ? parseFloat(form.carb_target_grams) : undefined,
+    hba1c: form.hba1c ? parseFloat(form.hba1c) : undefined,
+    hba1c_date: form.hba1c_date || undefined,
+  })
 
   const toggleArrayItem = (arr: string[], item: string): string[] =>
     arr.includes(item) ? arr.filter((i) => i !== item) : [...arr, item]
@@ -140,6 +157,50 @@ export default function ProfilePage() {
                   </Badge>
                 }
               />
+            </div>
+          )}
+        </Card>
+
+        <Card elevated>
+          <Card.Header title="Clinical targets" subtitle="Personalise your glucose and nutrition goals" />
+          {editing ? (
+            <div className={styles.editForm}>
+              <div className={styles.row}>
+                <Input label="Low glucose target (mmol/L)" type="number" step="0.1" min="2" max="10"
+                  placeholder="e.g. 4.0"
+                  value={form.glucose_low_target}
+                  onChange={(e) => setForm(p => ({ ...p, glucose_low_target: e.target.value }))} />
+                <Input label="High glucose target (mmol/L)" type="number" step="0.1" min="5" max="20"
+                  placeholder="e.g. 7.8"
+                  value={form.glucose_high_target}
+                  onChange={(e) => setForm(p => ({ ...p, glucose_high_target: e.target.value }))} />
+              </div>
+              <Input label="Daily carb target (g)" type="number" min="0" max="600"
+                placeholder="e.g. 130"
+                value={form.carb_target_grams}
+                onChange={(e) => setForm(p => ({ ...p, carb_target_grams: e.target.value }))} />
+              <div className={styles.row}>
+                <Input label="Latest HbA1c (%)" type="number" step="0.1" min="3" max="20"
+                  placeholder="e.g. 7.2"
+                  value={form.hba1c}
+                  onChange={(e) => setForm(p => ({ ...p, hba1c: e.target.value }))} />
+                <Input label="HbA1c date" type="date"
+                  value={form.hba1c_date}
+                  onChange={(e) => setForm(p => ({ ...p, hba1c_date: e.target.value }))} />
+              </div>
+            </div>
+          ) : (
+            <div className={styles.detailList}>
+              <DetailRow label="Glucose target range"
+                value={profile?.glucose_low_target || profile?.glucose_high_target
+                  ? `${profile?.glucose_low_target ?? 4.0}–${profile?.glucose_high_target ?? 7.8} mmol/L`
+                  : '--'} />
+              <DetailRow label="Daily carb target"
+                value={profile?.carb_target_grams ? `${profile.carb_target_grams}g` : '--'} />
+              <DetailRow label="Latest HbA1c"
+                value={profile?.hba1c
+                  ? `${profile.hba1c}%${profile.hba1c_date ? ` (${formatDate(profile.hba1c_date)})` : ''}`
+                  : '--'} />
             </div>
           )}
         </Card>

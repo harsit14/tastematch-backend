@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/lib/authStore'
@@ -37,6 +37,9 @@ export default function MealsPage() {
     meal_type: 'lunch',
     notes: '',
   })
+  const [foodSearch, setFoodSearch] = useState('')
+  const [foodResults, setFoodResults] = useState<Array<{name: string; carbs_per_100g?: number; calories_per_100g?: number; serving_size_g?: number}>>([])
+  const [searchingFood, setSearchingFood] = useState(false)
 
   const { data: meals, isLoading } = useQuery<MealLog[]>({
     queryKey: ['meals'],
@@ -54,6 +57,28 @@ export default function MealsPage() {
     },
     onError: () => toast('Failed to log meal', 'error'),
   })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/meals/${id}`, token ?? undefined),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['meals'] })
+      toast('Meal deleted', 'info')
+    },
+    onError: () => toast('Failed to delete meal', 'error'),
+  })
+
+  useEffect(() => {
+    if (form.meal_name.length < 3) { setFoodResults([]); return }
+    const timer = setTimeout(async () => {
+      setSearchingFood(true)
+      try {
+        const results = await api.get<any[]>(`/foods/search?q=${encodeURIComponent(form.meal_name)}`, token ?? undefined)
+        setFoodResults(results.slice(0, 5))
+      } catch { setFoodResults([]) }
+      finally { setSearchingFood(false) }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [form.meal_name])
 
   const handleLog = () => {
     if (!form.meal_name || !form.carbs_grams) return
@@ -142,6 +167,18 @@ export default function MealsPage() {
                       {capitalise(meal.meal_type)}
                     </Badge>
                   )}
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (window.confirm(`Delete "${meal.meal_name}"?`)) {
+                        deleteMutation.mutate(meal.id)
+                      }
+                    }}
+                    aria-label="Delete meal"
+                  >
+                    <TrashIcon />
+                  </button>
                 </div>
                 <div className={styles.mealCardStats}>
                   <div className={styles.mealCardStat}>
@@ -182,6 +219,34 @@ export default function MealsPage() {
             value={form.meal_name}
             onChange={set('meal_name')}
           />
+          {foodResults.length > 0 && (
+            <ul className={styles.foodSuggestions}>
+              {foodResults.map((food, i) => (
+                <li
+                  key={i}
+                  className={styles.foodSuggestion}
+                  onClick={() => {
+                    const serving = food.serving_size_g ?? 100
+                    setForm(p => ({
+                      ...p,
+                      meal_name: p.meal_name,
+                      carbs_grams: food.carbs_per_100g ? String(((food.carbs_per_100g * serving) / 100).toFixed(1)) : p.carbs_grams,
+                      calories: food.calories_per_100g ? String(((food.calories_per_100g * serving) / 100).toFixed(0)) : p.calories,
+                    }))
+                    setFoodResults([])
+                  }}
+                >
+                  <span className={styles.foodSuggestionName}>{food.name}</span>
+                  <span className={styles.foodSuggestionMeta}>
+                    {food.carbs_per_100g != null && `${food.carbs_per_100g}g carbs`}
+                    {food.carbs_per_100g != null && food.calories_per_100g != null && ' · '}
+                    {food.calories_per_100g != null && `${food.calories_per_100g} kcal`}
+                    {' per 100g'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
           <div className={styles.row}>
             <Input
               label="Carbohydrates (g)"
@@ -232,6 +297,14 @@ function UtensilsIcon() {
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/>
       <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
+    </svg>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
     </svg>
   )
 }

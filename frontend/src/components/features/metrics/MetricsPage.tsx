@@ -42,10 +42,10 @@ export default function MetricsPage() {
   })
 
   const handleLog = () => {
-    if (!form.weight_kg || !form.height_cm) return
+    if (!form.weight_kg) return
     logMutation.mutate({
       weight_kg: parseFloat(form.weight_kg),
-      height_cm: parseFloat(form.height_cm),
+      height_cm: form.height_cm ? parseFloat(form.height_cm) : (metrics?.[0]?.height_cm ?? 170),
     })
   }
 
@@ -69,7 +69,14 @@ export default function MetricsPage() {
       <PageHeader
         title="Body Metrics"
         subtitle="Track weight and BMI trends over time"
-        action={<Button onClick={() => setModalOpen(true)}>Log measurement</Button>}
+        action={
+          <Button onClick={() => {
+            setModalOpen(true)
+            if (metrics && metrics.length > 0) {
+              setForm(p => ({ ...p, height_cm: String(metrics[0].height_cm) }))
+            }
+          }}>Log measurement</Button>
+        }
       />
 
       {latest && (
