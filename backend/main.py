@@ -87,7 +87,7 @@ USDA_API_KEY = os.environ.get("USDA_API_KEY", "DEMO_KEY")
 
 PORT = int(os.environ.get("PORT", "8000"))
 
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "*")
 
 # ─────────────────────────────────────────────
 # Supabase admin client
@@ -167,7 +167,7 @@ app = FastAPI(title="TasteMatch API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL, "http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[FRONTEND_URL] if FRONTEND_URL != "*" else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
