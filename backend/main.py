@@ -553,7 +553,13 @@ async def signup(req: SignupRequest):
     }).execute()
 
     logger.info(f"New signup: {user_id}")
-    return {"user_id": user_id, "access_token": access_token, "message": "Account created."}
+    return {
+        "user_id": user_id,
+        "access_token": access_token,
+        "refresh_token": data.get("refresh_token"),
+        "expires_in": data.get("expires_in", 3600),
+        "message": "Account created.",
+    }
 
 
 @app.post("/auth/login")
@@ -573,6 +579,30 @@ async def login(req: LoginRequest):
         "user_id":       data["user"]["id"],
         "access_token":  data["access_token"],
         "refresh_token": data.get("refresh_token"),
+        "expires_in":    data.get("expires_in", 3600),
+    }
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+@app.post("/auth/refresh")
+async def refresh_token(req: RefreshRequest):
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{SUPABASE_URL}/auth/v1/token?grant_type=refresh_token",
+            headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+            json={"refresh_token": req.refresh_token},
+        )
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Refresh token invalid or expired.")
+
+    data = resp.json()
+    return {
+        "access_token":  data["access_token"],
+        "refresh_token": data.get("refresh_token"),
+        "expires_in":    data.get("expires_in", 3600),
     }
 
 # ── Profile ───────────────────────────────────────────────────────────────────

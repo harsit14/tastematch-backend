@@ -40,12 +40,12 @@ export default function SignupPage() {
     setLoading(true)
 
     try {
-      const data = await api.post<{ user_id: string; access_token: string | null }>(
+      const data = await api.post<{ user_id: string; access_token: string | null; refresh_token?: string; expires_in?: number }>(
         '/auth/signup',
         { ...form }
       )
       if (data.access_token) {
-        setAuth({ id: data.user_id, email: form.email }, data.access_token)
+        setAuth({ id: data.user_id, email: form.email }, data.access_token, data.refresh_token ?? '', data.expires_in ?? 3600)
         navigate('/dashboard')
       } else {
         // Supabase email confirmation required — token not returned until confirmed

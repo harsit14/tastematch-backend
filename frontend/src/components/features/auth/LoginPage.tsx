@@ -25,11 +25,11 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const data = await api.post<{ user_id: string; access_token: string }>(
+      const data = await api.post<{ user_id: string; access_token: string; refresh_token: string; expires_in: number }>(
         '/auth/login',
         { email, password }
       )
-      setAuth({ id: data.user_id, email }, data.access_token)
+      setAuth({ id: data.user_id, email }, data.access_token, data.refresh_token, data.expires_in ?? 3600)
       navigate('/dashboard')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong.')
