@@ -10,12 +10,12 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Overview', icon: GridIcon },
+  { path: '/chat', label: 'Ask TasteMatch', icon: MessageIcon },
   { path: '/glucose', label: 'Glucose', icon: ActivityIcon },
   { path: '/meals', label: 'Meals', icon: UtensilsIcon },
   { path: '/fridge', label: 'Fridge', icon: ArchiveIcon },
   { path: '/recipes', label: 'Recipes', icon: BookIcon },
   { path: '/foods', label: 'Food Search', icon: SearchIcon },
-  { path: '/chat', label: 'Ask TasteMatch', icon: MessageIcon },
   { path: '/metrics', label: 'Body Metrics', icon: TrendingIcon },
   { path: '/profile', label: 'Profile', icon: UserIcon },
 ]
